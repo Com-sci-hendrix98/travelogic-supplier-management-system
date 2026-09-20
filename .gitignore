@@ -1,0 +1,14 @@
+# Environment / secrets
+.env
+.env.*
+
+# .NET build output
+**/bin/
+**/obj/
+
+# Node / frontend dependencies
+**/node_modules/
+**/dist/
+
+# Local editor settings
+.vscode/
