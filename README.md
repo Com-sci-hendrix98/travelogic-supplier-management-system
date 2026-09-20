@@ -2,42 +2,42 @@
 
 A full-stack supplier management application built for the Travelogic technical assessment.
 
-The application allows tourism suppliers to be created with their associated services and provides a dashboard for viewing all suppliers and their services.
+The application allows tourism suppliers to be created with their associated services and provides a dashboard for viewing suppliers and their services.
 
 ## Features
 
-- Create tourism suppliers
-- Add multiple services to a supplier
-- View all suppliers and their services
-- View an individual supplier
-- Server-side request validation
-- SQL Server persistence
-- Entity Framework Core migrations
-- React frontend
-- ASP.NET Core API
-- Docker-based SQL Server setup
+* Create tourism suppliers
+* Add multiple services to a supplier
+* View all suppliers and their services
+* View an individual supplier
+* Server-side request validation
+* SQL Server persistence
+* Entity Framework Core migrations
+* React frontend
+* ASP.NET Core Web API
+* Docker-based SQL Server setup
 
 ## Tech Stack
 
 ### Backend
 
-- C#
-- .NET 10
-- ASP.NET Core Web API
-- Entity Framework Core
-- SQL Server
+* C#
+* .NET 10
+* ASP.NET Core Web API
+* Entity Framework Core
+* SQL Server
 
 ### Frontend
 
-- React
-- Vite
-- JavaScript
-- CSS
+* React
+* Vite
+* JavaScript
+* CSS
 
 ### Infrastructure
 
-- Docker
-- Docker Compose
+* Docker
+* Docker Compose
 
 ## Architecture
 
@@ -64,9 +64,15 @@ Entity Framework Core
       |
       v
 SQL Server
+```
 
 The API project acts as the composition root, wiring the application services, repository implementation, database context, and other dependencies together.
 
+These are code-level layers within one API project boundary, not separate deployed services.
+
+### Project Structure
+
+```text
 travelogic-supplier-management-system/
 ├── frontend/
 ├── backend/
@@ -85,29 +91,35 @@ travelogic-supplier-management-system/
 │   └── SupplierManagement.slnx
 ├── README.md
 └── docker-compose.yml
+```
 
-Layer Responsibilities
+### Layer Responsibilities
 
-Supplier.Api
+#### Supplier.Api
 
-HTTP boundary for the application. Handles routing, HTTP requests, responses, and dependency injection configuration.
+The HTTP boundary of the application.
 
-Supplier.Application
+Responsible for routing, HTTP requests and responses, dependency injection configuration, and exposing the API endpoints.
 
-Contains application use cases and contracts such as supplier creation, retrieval, request/response models, and the repository abstraction.
+#### Supplier.Application
 
-Supplier.Domain
+Contains application use cases and contracts such as supplier creation, supplier retrieval, request/response models, and the repository abstraction.
+
+This layer coordinates application behaviour without depending on the specific persistence technology.
+
+#### Supplier.Domain
 
 Contains the core business entities and their relationships without dependencies on infrastructure technologies.
 
-Supplier.Infrastructure
+#### Supplier.Infrastructure
 
-Contains technical implementations such as Entity Framework Core, SQL Server persistence, repository implementations, entity configurations, and migrations.
+Contains technical implementations such as Entity Framework Core, SQL Server persistence, repository implementations, entity configurations, and database migrations.
 
-Data Model
+## Data Model
 
 A supplier can have multiple services.
 
+```text
 Supplier
    |
    | 1
@@ -115,29 +127,41 @@ Supplier
    | *
    v
 Service
+```
 
-The Services table contains SupplierId as a foreign key referencing Suppliers.Id.
+The `Services` table contains `SupplierId` as a foreign key referencing `Suppliers.Id`.
 
-The database enforces this relationship and uses cascade delete so that services belonging to a supplier are removed when that supplier is deleted.
+The database enforces this relationship and uses cascade delete so that services belonging to a supplier are removed when their supplier is deleted.
 
-API Endpoints
-Get all suppliers
+## API Endpoints
+
+### Get all suppliers
+
+```http
 GET /api/suppliers
+```
 
 Returns all suppliers including their associated services.
 
-Get supplier by ID
+### Get supplier by ID
+
+```http
 GET /api/suppliers/{id}
+```
 
 Returns a single supplier including its services.
 
-Create supplier
+### Create supplier
+
+```http
 POST /api/suppliers
+```
 
 Creates a supplier and its associated services.
 
 Example request:
 
+```json
 {
   "name": "Ocean Breeze Adventures",
   "description": "Coastal excursions and guided marine experiences.",
@@ -153,15 +177,25 @@ Example request:
     }
   ]
 }
-Validation
+```
+
+## Validation
 
 Validation is performed on the API request models using ASP.NET Core validation attributes.
 
-The API validates required fields, string lengths, email format, service requirements, non-negative prices, and three-character currency codes.
+The API validates:
+
+* Required fields
+* String lengths
+* Email format
+* At least one service
+* Service field requirements
+* Non-negative prices
+* Three-character currency codes
 
 Frontend validation is also included for user experience, but server-side validation remains the authoritative boundary because API requests can be made without using the frontend.
 
-Request and Response Models
+## Request and Response Models
 
 The API does not bind HTTP requests directly to database entities.
 
@@ -169,97 +203,148 @@ Request models provide a dedicated contract for incoming API data and prevent cl
 
 Response models provide a controlled API response shape rather than exposing the Entity Framework entity graph directly.
 
-This also prevents circular JSON serialization caused by the bidirectional Supplier and Service navigation properties.
+This also prevents circular JSON serialization caused by the bidirectional `Supplier` and `Service` navigation properties.
 
-Database
+## Database
 
 SQL Server runs through Docker Compose.
 
 The database schema is managed using Entity Framework Core migrations located in:
 
+```text
 backend/Supplier.Infrastructure/Persistence/Migrations/
+```
 
-The current database contains:
+The database contains:
 
+```text
 Suppliers
 Services
 __EFMigrationsHistory
-Running the Application
-Prerequisites
-.NET 10 SDK
-Node.js
-Docker Desktop
-Git
-1. Start SQL Server
+```
+
+## Running the Application
+
+### Prerequisites
+
+* .NET 10 SDK
+* Node.js
+* Docker
+* Git
+
+### 1. Configure the local SQL Server password
+
+Create a `.env` file in the repository root:
+
+```env
+MSSQL_SA_PASSWORD=your-local-password
+```
+
+The `.env` file is intentionally excluded from Git because it contains local credentials.
+
+Do not commit this file.
+
+### 2. Start SQL Server
 
 From the repository root:
 
+```bash
 docker compose up -d
+```
 
-The SQL Server container uses the MSSQL_SA_PASSWORD value from the local .env file.
+Docker Compose reads `MSSQL_SA_PASSWORD` from `.env` and uses it to configure the SQL Server container.
 
-The .env file is intentionally excluded from Git because it contains local credentials.
+### 3. Configure the API connection string
 
-2. Configure the API connection string
+The ASP.NET Core API does not automatically read the root `.env` file.
 
-The API expects the SupplierDatabase connection string through the environment:
+Set the connection string as an environment variable in the shell used to run the API:
 
+```bash
 export 'ConnectionStrings__SupplierDatabase=Server=localhost,1433;Database=SupplierManagement;User Id=sa;Password=your-local-password;TrustServerCertificate=True;'
+```
 
-Replace your-local-password with the SQL Server password configured in .env.
+Use the same password configured in `.env`.
 
-3. Apply database migrations
+The password is intentionally kept outside the application's tracked configuration files.
+
+### 4. Apply database migrations
 
 From the backend directory:
 
+```bash
 dotnet ef database update \
   --project Supplier.Infrastructure \
   --startup-project Supplier.Api
-4. Start the API
+```
+
+### 5. Start the API
 
 From the backend directory:
 
+```bash
 dotnet run --project Supplier.Api
+```
 
 The API will be available at:
 
+```text
 http://localhost:5177
-5. Start the frontend
+```
+
+### 6. Start the frontend
 
 From the frontend directory:
 
+```bash
 npm install
 npm run dev
+```
 
 The frontend will be available at the Vite development URL, normally:
 
+```text
 http://localhost:5173
+```
 
-The Vite development server proxies /api requests to the ASP.NET Core API.
+The Vite development server proxies `/api` requests to the ASP.NET Core API.
 
-Architectural Decisions
-Separate application and infrastructure concerns
+## Architectural Decisions
+
+### Separate application and infrastructure concerns
 
 The application layer defines the repository abstraction while infrastructure provides the Entity Framework Core implementation.
 
-This keeps persistence technology-specific concerns out of the application use cases.
+This keeps persistence-specific concerns out of the application use cases and allows the persistence implementation to change without changing the application contract.
 
-Separate request and response models
+### Separate request and response models
 
 API contracts are separated from persistence entities to prevent accidental exposure of internal fields and to control the shape of data crossing the HTTP boundary.
 
-Explicit Entity Framework configuration
+This also prevents serialization of the full bidirectional Entity Framework navigation graph.
+
+### Explicit Entity Framework configuration
 
 Entity configuration is kept in dedicated configuration classes rather than relying entirely on EF Core conventions.
 
 This makes database constraints such as required fields, maximum lengths, decimal precision, and relationships explicit and easier to maintain.
 
-One API with separated code layers
+### One API with separated code layers
 
-The assessment only requires a supplier API, so the solution uses one independently deployable API rather than splitting the system into multiple services prematurely.
+The assessment requires a supplier API, so the solution uses one independently deployable API rather than splitting the system into multiple services prematurely.
 
-The internal separation allows the API to be incorporated into a larger microservice architecture later without introducing unnecessary operational complexity for the current requirements.
+The internal separation provides clear boundaries while avoiding unnecessary operational complexity for the current requirements.
 
-Future Extension
+The API can therefore form part of a larger microservice architecture later without requiring the current supplier functionality to be deployed as multiple services.
 
-The architecture leaves room for additional technical concerns such as scheduled reporting, external supplier integrations, or background processing without placing those infrastructure-specific concerns directly into the API or domain layer.
+## Future Extension
+
+The architecture leaves room for additional technical concerns such as:
+
+* Scheduled reporting
+* Background processing
+* External supplier integrations
+* Additional persistence implementations
+* Additional supplier-related use cases
+
+These concerns can be introduced within the appropriate application or infrastructure boundaries without placing infrastructure-specific logic directly in the domain layer.
