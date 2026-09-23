@@ -21,6 +21,7 @@ public class CreateSupplierRequest
     [StringLength(320)]
     public string ContactEmail { get; set; } = string.Empty;
 
+    [MinLength(1)] 
     public List<CreateSupplierServiceRequest> Services { get; set; } = [];
 }
 
